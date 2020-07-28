@@ -59,7 +59,7 @@ allenemy = 4 #จำนวนของ enemy ทั้งหมด
 
 for i in range(allenemy):
 	exlist.append(random.randint(0, WIDTH - esize))
-	eylist.append(random.randint(0,20))
+	eylist.append(random.randint(0,50))
 	# eychange_list.append(random.randint(1,5)) #สุ่มความเร็วให้ enemy
 	eychange_list.append(1) #กำหนดความเร็วเป็น 1 ก่อนแล้วค่อยเพิ่มหลังจากยิงโดน
 
@@ -103,9 +103,12 @@ def Life(x,y):
 ########### OBJECT - SOUND ###########
 pygame.mixer.Channel(0).play(pygame.mixer.Sound('virusaleart.wav')) #start sound
 
-pygame.mixer.music.load('bgsound.mp3') #backgroud sound
-pygame.mixer.music.set_volume(0.2) #ความดังของเสียง
-pygame.mixer.music.play(loops=-1) #-1 คือ loop forever
+def bgsound():
+	pygame.mixer.music.load('bgsound.mp3') #backgroud sound
+	pygame.mixer.music.set_volume(0.2) #ความดังของเสียง
+	pygame.mixer.music.play(loops=-1) #-1 คือ loop forever
+
+bgsound()
 	
 ########### FUNCTION - COLLISION ENEMY ###########
 def isCollision(ecx,ecy,mcx,mcy):
@@ -160,17 +163,31 @@ def ReadHighScore():
 			filecsv.append(r)
 		# print(filecsv)
 
+########### FUNCTION - PAUSED ###########
+pause = False
+
+def Paused():
+	global pause
+	
+	# print(pause)
+
+	while pause:
+		for event in pygame.event.get():
+			if event.type == pygame.QUIT: #ถ้ากดกากบาทให้ปิดเกมส์
+				pause = False
+				
+			elif event.type == pygame.KEYDOWN and event.key == pygame.K_p:
+				pause = not pause
+				# print(pause)
+
 ########### FUNCTION - GAME BREAK ###########
-continueus = True 
+continueus = True
 
 def GameBreak():
 	global life
 	global continueus
 
-	for i in range(allenemy):
-		eylist[i] = 0
-
-	life = life - 1
+	life -= 1
 
 	breaktext = fonttext.render('Press [C] for Continue...',True,(134,4,181))
 	screen.blit(breaktext,(60,200))
@@ -184,9 +201,9 @@ def GameBreak():
 playsoundOver = False
 gameover = False
 
+
 def GameOver():
 	global playsoundOver
-	global gameover
 	global continueus
 
 	overtext = fontover.render('Game Over',True,(255,0,0))
@@ -205,7 +222,7 @@ def GameOver():
 		continueus = False
 
 	AddHighScore()
-	
+
 ############################################ GAME LOOP ############################################
 running = True #บอกให้โปรแกรมทำงาน
 
@@ -214,6 +231,7 @@ clock = pygame.time.Clock() #game clock
 FPS = 30 #frame rate
 
 while running:
+			
 	for event in pygame.event.get(): #เช็ค event ที่เกิดขึ้น
 		if event.type == pygame.QUIT: #ถ้ากดกากบาทให้ปิดเกมส์
 			running = False
@@ -222,12 +240,12 @@ while running:
 			if event.key == pygame.K_LEFT:
 				pxchange = -10
 				if istate == 'active':
-					pxchange = -30
+					pxchange += -20
 
 			if event.key == pygame.K_RIGHT:
 				pxchange = 10
 				if istate == 'active':
-					pxchange = 30
+					pxchange += 20
 				
 			if event.key == pygame.K_SPACE:
 				if mstate == 'ready':
@@ -238,10 +256,14 @@ while running:
 					Fire_mask(mx,my)
 
 			if event.key == pygame.K_c:
-				if continueus == True:
+
+				if continueus == False:
+					istate = 'deactive'
 					for i in range(allenemy):
+						eychange_list[i] = 1
 						exlist[i] = random.randint(0, WIDTH - esize)
-						eylist[i] = random.randint(0,20)
+						eylist[i] = random.randint(0,50)
+					continueus = True
 
 			if event.key == pygame.K_n:
 				allscore = 0
@@ -250,19 +272,27 @@ while running:
 				gameover = False
 				istate = 'deactive'
 				iy = 0
-				Showscore()
-				continueus = False
+				continueus = True
+				bgsound()
 				
 				for i in range(allenemy):
 					eychange_list[i] = 1
 					exlist[i] = random.randint(0, WIDTH - esize)
-					eylist[i] = random.randint(0,20)
+					eylist[i] = random.randint(0,50)
+
+			if event.key == pygame.K_p:
+				pause = not pause
+				Paused()
+				
+
 					
 		if event.type == pygame.KEYUP: #ถ้ามีการปล่อยปุ่ม
 
 			if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
 				pxchange = 0
 
+	######## RUN SHOWSCORE ########
+	Showscore()
 
 	######## RUN PLAYER ########
 	Player(px,py) #px, py คือจุดเริ่มต้นของ player
@@ -282,14 +312,18 @@ while running:
 		#หากอยู่ระหว่างหน้าจอ ให้ทำการ บวก/ลบ ตามค่า pxchange ที่เปลี่ยนไปใน if-elif
 		px += pxchange
 		# print('PX:',px)
-	######## RUN LIFE ########
 
+	######## RUN LIFE ########
 	Life(lx,ly)
 	# print('LIFE:',life)
 	fontlife = pygame.font.Font('BLS-Bold.ttf',20)
+
 	if gameover == False:
 		flife = fontlife.render('x {}'.format(life),True,(39,27,150))
 		screen.blit(flife,(730,15))
+
+		flife = fontlife.render('Press "P" to Pause',True,(39,27,150))
+		screen.blit(flife,(600,HEIGHT - 45))
 	elif gameover == True:
 		flife = fontlife.render('x 0',True,(39,27,150))
 		screen.blit(flife,(730,15))
@@ -313,30 +347,36 @@ while running:
 	######## RUN MULTI ENEMY ########
 	# print('EYCHENG_LIST:',eychange_list)
 	for i in range(allenemy):
+		
+		
+		Enemy(exlist[i],eylist[i])
+		######## RUN GAME BREAK and OVER ########
+		
 		# print('EYLIST:',eylist)
-		if eylist[i] > HEIGHT and gameover == True:
+		if eylist[i] > HEIGHT - esize and life > 1 and gameover == False:
+			# print('EYLIST:',eylist[i])
+			pygame.mixer.Channel(3).play(pygame.mixer.Sound('gamebreak.wav')) #game break sound
+			# pygame.mixer.Channel(3).set_volume(0.5) #ความดังของเสียง
+			for i in range(allenemy):
+				eylist[i] = 0
+			# Paused()
+			GameBreak()
+			# print(life)
+			# break
+			
+		elif eylist[i] > HEIGHT - esize and life == 1 and gameover == False:
+			gameover = True
+
+
+		elif eylist[i] > HEIGHT - esize and gameover == True:
+			# print('EYLIST:',eylist[i])
+			iy = 1000
 			for i in range(allenemy):
 				eylist[i] = 1000
 			GameOver()
-			break
+			# break
 
-		if eylist[i] > HEIGHT and 3 >= life > 1 :
-			print('EYLIST:',eylist)
-			pygame.mixer.music.load('gamebreak.wav') #game break sound
-			pygame.mixer.music.set_volume(0.5) #ความดังของเสียง
-			pygame.mixer.music.play()
-
-			for i in range(allenemy):
-				eylist[i] = 1000
-			GameBreak()
-			# print(life)
-			break
-
-		elif eylist[i] > HEIGHT and life == 1:
-			gameover = True
-
-		eylist[i] += eychange_list[i] #สุ่มความเร็วของ enemy
-
+			
 		######## COLLISION ENEMY MULTI ########
 		collisionmulti = isCollision(exlist[i],eylist[i],mx,my)
 		if collisionmulti:
@@ -349,29 +389,30 @@ while running:
 
 			pygame.mixer.Channel(2).play(pygame.mixer.Sound('broken.wav')) #broken sound
 			pygame.mixer.Channel(2).set_volume(0.3)
-			
-		Enemy(exlist[i],eylist[i])
+
+		eylist[i] += eychange_list[i] #สุ่มความเร็วของ enemy
 
 	######## RUN ITEM ########
-	if allscore != 0 and allscore >=5:
+	# bonus = [5,10,15,20]
+
+	if istate == 'deactive' and allscore != 0 and allscore >=5:
 		Item(ix,iy)
 		iy += iychange
 
-	######## COLLISION ITEM ########
-	collisionitem = isCollisionItem(ix,iy,px,py)
-	if collisionitem:
+		######## COLLISION ITEM ########
+		collisionitem = isCollisionItem(ix,iy,px,py)
+		if collisionitem:
+			iy = 1000
+			life += 1
+			istate = 'active'
+			# print('ISTATE:',istate)
 
-		iy = 1000
+			if playsoundItem == False:
+				osound = pygame.mixer.Sound('item.wav')
+				osound.set_volume(0.2)
+				osound.play()
 
-		if playsoundItem == False:
-			osound = pygame.mixer.Sound('item.wav')
-			osound.set_volume(0.2)
-			osound.play()
-
-			playsoundItem = True
-		
-		istate = 'active'
-		# print('ISTATE:',istate)
+				playsoundItem = True
 
 	######## RUN FIRE MASK ########
 	if mstate == 'fire':
@@ -382,11 +423,10 @@ while running:
 		my = HEIGHT - psize
 		mstate = 'ready'
 
-	Showscore()
 	# print('PX:',px)
 	pygame.display.update()
-	# pygame.display.flip()
-	# pygame.event.pump()
+	pygame.display.flip()
+	pygame.event.pump()
 	screen.fill((0,0,0,))
 	screen.blit(background,(0,0))
 	clock.tick(FPS)
